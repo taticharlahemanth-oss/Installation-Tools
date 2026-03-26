@@ -1,0 +1,194 @@
+# 🚀 ArgoCD Installation on Kubernetes using Helm
+
+This project demonstrates how to install and configure **ArgoCD** on a Kubernetes cluster using **Helm**, and access it for GitOps-based deployments.
+
+---
+
+## 📌 Prerequisites
+
+* Kubernetes cluster (EKS / AKS / GKE / Minikube / KodeKloud)
+* `kubectl` configured
+* `helm` installed
+
+---
+
+## 📦 Step 1: Add ArgoCD Helm Repository
+
+```bash
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+```
+
+---
+
+## 📁 Step 2: Create Namespace
+
+```bash
+kubectl create namespace argocd
+```
+
+---
+
+## 🚀 Step 3: Install ArgoCD using Helm
+
+```bash
+helm install argocd argo/argo-cd \
+  -n argocd
+```
+
+---
+
+## 🔍 Step 4: Verify Installation
+
+```bash
+kubectl get pods -n argocd
+```
+
+Expected components:
+
+* argocd-server
+* argocd-repo-server
+* argocd-application-controller
+* argocd-dex-server
+* argocd-redis
+
+---
+
+## 🌐 Step 5: Access ArgoCD UI
+
+### Option 1: Port Forward (Recommended)
+
+```bash
+kubectl port-forward svc/argocd-server 7070:443 -n argocd
+```
+
+Open in browser:
+
+```
+https://localhost:7070
+```
+
+> ⚠️ Accept the self-signed certificate warning
+
+---
+
+## 🔑 Step 6: Get Admin Password
+
+```bash
+kubectl get secret argocd-initial-admin-secret -n argocd \
+-o jsonpath="{.data.password}" | base64 --decode
+```
+
+**Login Credentials:**
+
+* Username: `admin`
+* Password: (from above command)
+
+---
+
+## ⚙️ Optional: Expose via NodePort
+
+```bash
+kubectl patch svc argocd-server -n argocd \
+  -p '{"spec": {"type": "NodePort"}}'
+```
+
+Then:
+
+```bash
+kubectl get svc -n argocd
+```
+
+Access using:
+
+```
+https://<NodeIP>:<NodePort>
+```
+
+---
+
+## 📄 Step 7: Install with Custom values.yaml
+
+Create a `values.yaml` file:
+
+```yaml
+server:
+  service:
+    type: NodePort
+
+  extraArgs:
+    - --insecure
+
+repoServer:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+applicationController:
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+```
+
+Install using:
+
+```bash
+helm upgrade argocd argo/argo-cd \
+  -n argocd -f values.yaml
+```
+
+---
+
+## 🔄 Upgrade / Uninstall
+
+### Upgrade
+
+```bash
+helm upgrade argocd argo/argo-cd -n argocd
+```
+
+### Uninstall
+
+```bash
+helm uninstall argocd -n argocd
+```
+
+---
+
+## 🧠 Key Concepts
+
+* ArgoCD follows **GitOps methodology**
+* Automatically syncs Kubernetes manifests from Git repositories
+* Supports Helm, Kustomize, and plain YAML
+
+---
+
+## 🔥 DevOps Use Case
+
+* CI tool (Jenkins/GitHub Actions) pushes code → Git repo
+* ArgoCD detects changes → deploys to Kubernetes automatically
+
+---
+
+## 🎯 Interview Tip
+
+> "I installed ArgoCD using Helm and used it to implement GitOps for Kubernetes deployments, enabling automatic sync between Git and cluster."
+
+---
+
+## 📌 Next Steps
+
+* Deploy your first application using ArgoCD
+* Enable Auto-Sync for continuous deployment
+* Integrate with GitHub/GitLab repositories
+
+---
+
+## 📚 References
+
+* https://argo-cd.readthedocs.io/
+* https://artifacthub.io/packages/helm/argo/argo-cd
+
+---
