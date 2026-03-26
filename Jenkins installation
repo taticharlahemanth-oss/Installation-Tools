@@ -1,0 +1,240 @@
+# 🚀 Jenkins Installation on Kubernetes using Helm
+
+## 📌 Overview
+
+This project demonstrates how to install and configure **Jenkins on Kubernetes** using **Helm charts** with a custom `values.yaml`.
+
+The setup is optimized for:
+
+* Kubernetes lab environments (no storage class)
+* Fast deployment
+* Minimal resource usage
+
+---
+
+## 🧰 Prerequisites
+
+* Kubernetes Cluster (EKS / Minikube / KodeKloud / On-Prem)
+* Helm installed
+* kubectl configured
+* Namespace access
+
+---
+
+## 📁 Project Structure
+
+```
+.
+├── values.yaml
+└── README.md
+```
+
+---
+
+## ⚙️ Step 1: Add Jenkins Helm Repository
+
+```bash
+helm repo add jenkins https://charts.jenkins.io
+helm repo update
+```
+
+---
+
+## 📦 Step 2: Create Namespace
+
+```bash
+kubectl create namespace jenkins
+```
+
+---
+
+## 🧹 Step 3: Clean Previous Installation (If Any)
+
+```bash
+helm uninstall jenkins -n jenkins
+kubectl delete namespace jenkins
+kubectl create namespace jenkins
+```
+
+---
+
+## 📄 Step 4: Custom values.yaml
+
+```yaml
+controller:
+  serviceType: NodePort
+
+  admin:
+    username: admin
+    password: admin123
+
+  persistence:
+    enabled: false   # Disable PVC for lab environments
+
+  installPlugins: []  # Avoid init container issues
+
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+
+agent:
+  enabled: false
+```
+
+---
+
+## 🚀 Step 5: Install Jenkins
+
+```bash
+helm install jenkins jenkins/jenkins \
+  -n jenkins -f values.yaml
+```
+
+---
+
+## 🔍 Step 6: Verify Deployment
+
+```bash
+kubectl get pods -n jenkins
+```
+
+Expected Output:
+
+```
+jenkins-0   Running
+```
+
+---
+
+## 🌐 Step 7: Access Jenkins UI
+
+### Option 1: Port Forward (Recommended)
+
+```bash
+kubectl port-forward svc/jenkins 8081:8080 -n jenkins
+```
+
+Access:
+
+```
+http://localhost:8081
+```
+
+---
+
+### Option 2: NodePort
+
+```bash
+kubectl get svc -n jenkins
+```
+
+Example:
+
+```
+jenkins   NodePort   8080:32022
+```
+
+Access:
+
+```
+http://<NODE-IP>:32022
+```
+
+---
+
+## 🔑 Step 8: Get Admin Password
+
+```bash
+kubectl exec -n jenkins -it svc/jenkins \
+-- /bin/cat /run/secrets/additional/chart-admin-password
+```
+
+Login:
+
+* Username: `admin`
+* Password: (above output)
+
+---
+
+## 🧠 Key Configurations Explained
+
+| Configuration             | Purpose                      |
+| ------------------------- | ---------------------------- |
+| persistence.enabled=false | Avoid PVC issues in labs     |
+| serviceType=NodePort      | External access              |
+| installPlugins=[]         | Prevent init container crash |
+| agent.enabled=false       | Lightweight setup            |
+
+---
+
+## ⚠️ Troubleshooting
+
+### ❌ Pod Pending (PVC issue)
+
+Solution:
+
+```
+persistence.enabled=false
+```
+
+---
+
+### ❌ Port already in use
+
+```
+kubectl port-forward svc/jenkins 9090:8080 -n jenkins
+```
+
+---
+
+### ❌ Pod CrashLoopBackOff
+
+```
+kubectl logs jenkins-0 -n jenkins
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+Kubernetes Cluster
+        │
+        ├── Jenkins (Helm Deployment)
+        │       ├── Controller Pod
+        │       └── Service (NodePort / ClusterIP)
+        │
+        └── kubectl / K9s (Management)
+```
+
+---
+
+## 🚀 Future Enhancements
+
+* Integrate with GitHub
+* Build CI/CD pipelines
+* Docker image builds
+* ArgoCD GitOps deployment
+* Add persistent storage (Production)
+
+---
+
+## 💡 Interview Explanation
+
+> “I deployed Jenkins on Kubernetes using Helm with a custom values.yaml, optimized for non-persistent environments by disabling PVC, and exposed it via NodePort and port-forwarding.”
+
+---
+
+## 🙌 Conclusion
+
+This setup provides a lightweight and quick way to run Jenkins in Kubernetes, ideal for:
+
+* Learning DevOps
+* Testing pipelines
+* Lab environments
+
+---
