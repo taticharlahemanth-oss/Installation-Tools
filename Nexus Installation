@@ -1,0 +1,262 @@
+# 🚀 Nexus Repository Manager on Kubernetes (Helm Deployment)
+
+## 📌 Overview
+
+This project demonstrates how to deploy **Sonatype Nexus Repository Manager** on Kubernetes using Helm. Nexus acts as a central artifact repository for storing and managing build artifacts such as Docker images, Maven dependencies, and more.
+
+---
+
+## 🧰 Tech Stack
+
+* Kubernetes (EKS / Minikube / K8s Cluster)
+* Helm (v3+)
+* Nexus Repository Manager (Docker Image)
+* Persistent Volume (PVC)
+* NodePort Service
+
+---
+
+## 📁 Project Structure
+
+```
+nexus/
+├── values.yaml
+└── README.md
+```
+
+---
+
+## ⚙️ Prerequisites
+
+* Kubernetes cluster (running)
+* kubectl configured
+* Helm installed
+* StorageClass available in cluster
+
+Check storage class:
+
+```bash
+kubectl get sc
+```
+
+---
+
+## 📦 Add Helm Repository
+
+```bash
+helm repo add sonatype https://sonatype.github.io/helm3-charts/
+helm repo update
+```
+
+---
+
+## 🏗️ Create Namespace
+
+```bash
+kubectl create namespace nexus
+```
+
+---
+
+## ⚙️ values.yaml Configuration
+
+### 🔹 Key Configurations
+
+```yaml
+nexus:
+  imageName: sonatype/nexus3
+  tag: "3.68.1"
+
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "1"
+
+  env:
+    - name: INSTALL4J_ADD_VM_PARAMS
+      value: "-Xms1g -Xmx2g -XX:MaxDirectMemorySize=2g"
+
+persistence:
+  enabled: true
+  storageClass: ""   # Uses default StorageClass
+  accessMode: ReadWriteOnce
+  size: 20Gi
+
+service:
+  type: NodePort
+  port: 8081
+  nodePort: 32000
+```
+
+---
+
+## 🚀 Deploy Nexus
+
+```bash
+helm install nexus sonatype/nexus-repository-manager \
+  -n nexus \
+  -f values.yaml
+```
+
+---
+
+## 🔄 Upgrade Deployment
+
+```bash
+helm upgrade nexus sonatype/nexus-repository-manager \
+  -n nexus \
+  -f values.yaml
+```
+
+---
+
+## 🔍 Verify Deployment
+
+```bash
+kubectl get pods -n nexus
+kubectl get svc -n nexus
+kubectl get pvc -n nexus
+```
+
+Expected:
+
+* Pod status: `Running`
+* PVC status: `Bound`
+
+---
+
+## 🌐 Access Nexus UI
+
+### 🔹 Using NodePort
+
+```bash
+kubectl get nodes -o wide
+```
+
+Access:
+
+```
+http://<NodeIP>:32000
+```
+
+---
+
+### 🔹 Using Port Forward (Alternative)
+
+```bash
+kubectl port-forward svc/nexus-nexus-repository-manager 8081:8081 -n nexus
+```
+
+Access:
+
+```
+http://localhost:8081
+```
+
+---
+
+## 🔐 Get Admin Password
+
+```bash
+kubectl exec -it <pod-name> -n nexus -- cat /nexus-data/admin.password
+```
+
+---
+
+## 🧪 Health Check
+
+```bash
+kubectl describe pod <pod-name> -n nexus
+kubectl logs <pod-name> -n nexus
+```
+
+---
+
+## ⚠️ Troubleshooting
+
+### ❌ PVC Pending
+
+* Check StorageClass
+* Set `storageClass: ""` or correct value
+
+### ❌ Image Pull Error
+
+* Ensure image tag is specified
+
+### ❌ Nexus Not Accessible
+
+* Verify NodePort
+* Check firewall/security groups
+
+### ❌ Liveness Probe Failed
+
+* Wait 2–5 minutes (Nexus startup time)
+* Increase memory if needed
+
+---
+
+## 🧠 Best Practices
+
+* Use persistent storage (PVC)
+* Allocate minimum 2GB RAM
+* Use specific image tag (avoid `latest`)
+* Use Ingress for production
+* Enable backup strategy
+
+---
+
+## 🔐 Production Recommendations
+
+* Use Ingress + HTTPS
+* Configure authentication/LDAP
+* Enable Nexus cleanup policies
+* Secure with firewall rules
+* Monitor using Prometheus/Grafana
+
+---
+
+## 🔗 Useful Commands
+
+```bash
+# Check pods
+kubectl get pods -n nexus
+
+# Check services
+kubectl get svc -n nexus
+
+# Check PVC
+kubectl get pvc -n nexus
+
+# Logs
+kubectl logs -f <pod-name> -n nexus
+
+# Describe pod
+kubectl describe pod <pod-name> -n nexus
+```
+
+---
+
+## 🎯 Outcome
+
+* Successfully deployed Nexus on Kubernetes
+* Enabled persistent storage
+* Exposed service using NodePort
+* Ready for CI/CD integration
+
+---
+
+## 🚀 Next Steps
+
+* Integrate with Jenkins
+* Create Docker repository in Nexus
+* Push images from CI/CD pipeline
+* Setup cleanup policies
+
+---
+
+## 👨‍💻 Author
+
+DevOps Engineer 🚀
