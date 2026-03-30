@@ -1,0 +1,257 @@
+# 🚀 SonarQube Installation on Kubernetes using Helm
+
+## 📌 Overview
+
+This project demonstrates how to deploy **SonarQube** on Kubernetes using Helm with a custom `values.yaml`.
+
+This setup is optimized for:
+
+* Lab environments (no storage class)
+* Restricted clusters (no privileged containers)
+* Quick deployment
+
+---
+
+## 🧰 Prerequisites
+
+* Kubernetes Cluster (Minikube / EKS / KodeKloud / On-Prem)
+* Helm installed
+* kubectl configured
+
+---
+
+## 📁 Project Structure
+
+```
+.
+├── values.yaml
+└── README.md
+```
+
+---
+
+## ⚙️ Step 1: Add SonarQube Helm Repo
+
+```bash
+helm repo add sonarqube https://SonarSource.github.io/helm-chart-sonarqube
+helm repo update
+```
+
+---
+
+## 📦 Step 2: Create Namespace
+
+```bash
+kubectl create namespace sonarqube
+```
+
+---
+
+## 🧹 Step 3: Clean Previous Installation (If Any)
+
+```bash
+helm uninstall sonarqube -n sonarqube
+kubectl delete namespace sonarqube
+kubectl create namespace sonarqube
+```
+
+---
+
+## 📄 Step 4: Custom values.yaml
+
+```yaml
+community:
+  enabled: true   # Use free community edition
+
+monitoringPasscode: "admin123"   # Required for health checks
+
+service:
+  type: NodePort
+  externalPort: 9000
+  internalPort: 9000
+
+persistence:
+  enabled: false   # Disable PVC for lab
+
+initSysctl:
+  enabled: false   # Disable privileged init container
+
+initFs:
+  enabled: false   # Avoid permission issues in restricted clusters
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "1"
+    memory: "2Gi"
+```
+
+---
+
+## 🚀 Step 5: Install SonarQube
+
+```bash
+helm install sonarqube sonarqube/sonarqube \
+  -n sonarqube -f values.yaml
+```
+
+---
+
+## 🔍 Step 6: Verify Deployment
+
+```bash
+kubectl get pods -n sonarqube
+```
+
+Expected:
+
+```
+sonarqube-sonarqube-0   Running
+```
+
+---
+
+## 🌐 Step 7: Access SonarQube UI
+
+### Option 1: Port Forward (Recommended)
+
+```bash
+kubectl port-forward svc/sonarqube 9000:9000 -n sonarqube
+```
+
+Access:
+
+```
+http://localhost:9000
+```
+
+---
+
+### Option 2: NodePort
+
+```bash
+kubectl get svc -n sonarqube
+```
+
+Example:
+
+```
+9000:32050/TCP
+```
+
+Access:
+
+```
+http://<NODE-IP>:32050
+```
+
+---
+
+## 🔑 Step 8: Login Credentials
+
+```
+Username: admin
+Password: admin
+```
+
+👉 Change password on first login
+
+---
+
+## ⚠️ Troubleshooting
+
+### ❌ init-sysctl Crash
+
+Fix:
+
+```
+initSysctl:
+  enabled: false
+```
+
+---
+
+### ❌ Helm Validation Error
+
+```
+monitoringPasscode required
+```
+
+Fix:
+
+```
+monitoringPasscode: "admin123"
+```
+
+---
+
+### ❌ Edition Error
+
+Fix:
+
+```
+community:
+  enabled: true
+```
+
+---
+
+### ❌ Pod Pending (PVC Issue)
+
+Fix:
+
+```
+persistence:
+  enabled: false
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+Kubernetes Cluster
+        │
+        ├── SonarQube (Helm)
+        │       ├── Pod
+        │       └── Service (NodePort)
+        │
+        └── kubectl / K9s
+```
+
+---
+
+## 🔥 DevOps Workflow
+
+```
+GitHub → Jenkins → SonarQube → Docker → ArgoCD → Kubernetes
+```
+
+---
+
+## 🧠 Interview Explanation
+
+> “I deployed SonarQube on Kubernetes using Helm, configured it for restricted environments by disabling privileged init containers, and exposed it via NodePort.”
+
+---
+
+## 🚀 Future Enhancements
+
+* Integrate with Jenkins pipeline
+* Add PostgreSQL database
+* Use Ingress for domain access
+* Enable persistent storage
+
+---
+
+## 🙌 Conclusion
+
+This setup provides a lightweight and effective way to run SonarQube in Kubernetes, ideal for:
+
+* DevOps practice
+* CI/CD pipelines
+* Code quality scanning
+
+---
